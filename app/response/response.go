@@ -1,18 +1,21 @@
 package response
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/codecrafters-io/http-server-starter-go/app/request"
-
 )
 
 type Response struct {
 	Status  int
 	Headers map[string]string
 
-	Body string
+	Body []byte
 	str  strings.Builder
 }
 
@@ -24,8 +27,20 @@ const (
 	NotFoundResponse = "HTTP/1.1 404 Not Found\r\n\r\n"
 )
 
+var fileServerDir = func() string {
+	idx := slices.Index(os.Args, "--directory")
+	if idx == -1 || idx == len(os.Args)-1 {
+		fmt.Println("WARNING: No valid '--directory' provided. Cannot serve files")
+		return ""
+	}
+	return os.Args[idx+1]
+
+}()
+
 func FromRequest(req *request.Request) *Response {
+	// In descending priority.
 	const ECHO_PRE = "/echo/"
+	const FILE_PRE = "/files/"
 	const HEADER_PRE = "/"
 
 	switch {
@@ -33,20 +48,47 @@ func FromRequest(req *request.Request) *Response {
 		return &Response{Status: 404}
 	case req.Path == "/":
 		return &Response{Status: 200}
+
 	case strings.HasPrefix(req.Path, ECHO_PRE):
 		body := req.Path[len(ECHO_PRE):]
 		res := &Response{Status: 200}
-		res.addBody("text/plain", body)
+		res.addBody("text/plain", []byte(body))
 		return res
+
+	// Serve file contents route
+	case strings.HasPrefix(req.Path, FILE_PRE):
+		filename := req.Path[len(FILE_PRE):]
+		entries, err := os.ReadDir(fileServerDir)
+		if err != nil {
+			fmt.Printf("Could read file server directory %q. Cannot serve file %q: %s\n", fileServerDir, filename, err.Error())
+			return &Response{Status: 404}
+		}
+		path := filepath.Join(fileServerDir, filename)
+		for _, entry := range entries {
+			if entry.IsDir() || entry.Name() != filename {
+				continue
+			}
+			contents, err := os.ReadFile(path)
+			if err != nil {
+				fmt.Printf("Could not read file %q: %s\n", path, err.Error())
+				return &Response{Status: 400}
+			}
+			res := &Response{Status: 200}
+			res.addBody("application/octet-stream", contents)
+		  
+			return res
+		}
+		fmt.Printf("Could not find file. Filename: %q. Path: %q\n", filename, path)
+	// Echo header route
 	case strings.HasPrefix(req.Path, HEADER_PRE):
 		header := strings.ToLower(req.Path[len(HEADER_PRE):])
-		
+
 		for key, value := range req.Headers {
 			if strings.ToLower(key) != header {
 				continue
 			}
 			res := &Response{Status: 200}
-			res.addBody("text/plain", value)
+			res.addBody("text/plain", []byte(value))
 			return res
 		}
 	}
@@ -54,7 +96,7 @@ func FromRequest(req *request.Request) *Response {
 	return &Response{Status: 404}
 }
 
-func (res *Response) addBody(contentType string, body string) {
+func (res *Response) addBody(contentType string, body []byte) {
 	if res.Headers == nil {
 		res.Headers = make(map[string]string)
 	}
@@ -102,6 +144,6 @@ func (res *Response) writeHeaders() {
 }
 
 func (res *Response) writeBody() {
-	res.str.WriteString(res.Body)
+	res.str.Write(res.Body)
 	// TODO: Might have to add \r\n here?
 }
