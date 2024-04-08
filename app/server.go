@@ -27,10 +27,10 @@ func main() {
 		os.Exit(1)
 	}
 	
-	connChan := make(chan net.Conn)
+	// connChan := make(chan net.Conn)
 
 	//	can handle concurrent requests
-	go connection.HandleConnections(connChan)
+	// go connection.HandleConnections(connChan)
 
 	for {
 		conn, err := l.Accept()
@@ -38,6 +38,7 @@ func main() {
 			fmt.Println("Error accepting connection: ", err.Error())
 			os.Exit(1)
 		}
-		connChan <- conn
+		// connChan <- conn
+		go connection.HandleConn(conn)
 	}
 }

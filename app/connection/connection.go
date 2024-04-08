@@ -11,11 +11,11 @@ import (
 func HandleConnections(connChan chan net.Conn) {
 	for {
 		conn := <-connChan
-		go handleConn(conn)
+		go HandleConn(conn)
 	}
 }
 
-func handleConn(conn net.Conn) {
+func HandleConn(conn net.Conn) {
 	defer func() {
 		err := conn.Close()
 		if err != nil {
