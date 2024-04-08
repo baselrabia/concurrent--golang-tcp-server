@@ -1,8 +1,11 @@
-package main
+package response
 
 import (
 	"strconv"
 	"strings"
+
+	"github.com/codecrafters-io/http-server-starter-go/app/request"
+
 )
 
 type Response struct {
@@ -21,23 +24,24 @@ const (
 	NotFoundResponse = "HTTP/1.1 404 Not Found\r\n\r\n"
 )
 
-func FromRequest(req *httpReq) *Response {
+func FromRequest(req *request.Request) *Response {
 	const ECHO_PRE = "/echo/"
 	const HEADER_PRE = "/"
 
 	switch {
 	case req == nil:
 		return &Response{Status: 404}
-	case req.path == "/":
+	case req.Path == "/":
 		return &Response{Status: 200}
-	case strings.HasPrefix(req.path, ECHO_PRE):
-		body := req.path[len(ECHO_PRE):]
+	case strings.HasPrefix(req.Path, ECHO_PRE):
+		body := req.Path[len(ECHO_PRE):]
 		res := &Response{Status: 200}
 		res.addBody("text/plain", body)
 		return res
-	case strings.HasPrefix(req.path, HEADER_PRE):
-		header := strings.ToLower(req.path[len(HEADER_PRE):])
-		for key, value := range req.headers {
+	case strings.HasPrefix(req.Path, HEADER_PRE):
+		header := strings.ToLower(req.Path[len(HEADER_PRE):])
+		
+		for key, value := range req.Headers {
 			if strings.ToLower(key) != header {
 				continue
 			}
