@@ -44,11 +44,11 @@ func readConnToString(conn net.Conn) string {
 	return string(buff)
 }
 func responder(conn net.Conn, req *httpReq) {
-	response := NotFoundResponse
-	if req.path == "/" {
-		response = OkResponse
-	}
-	if _, err := conn.Write([]byte(response)); err != nil {
+	 
+	resp := FromRequest(req)
+	res,_ := resp.String()
+	fmt.Println(res)
+	if _, err := conn.Write([]byte(res)); err != nil {
 		fmt.Println("Error writing into connection: ", err.Error())
 		os.Exit(1)
 
