@@ -1,16 +1,16 @@
 package main
 
-
 import (
 	"strconv"
 	"strings"
 )
+
 type Response struct {
 	Status  int
 	Headers map[string]string
- 
-	Body    string
-	str     strings.Builder
+
+	Body string
+	str  strings.Builder
 }
 
 const HTTP_VER = "HTTP/1.1"
@@ -22,7 +22,9 @@ const (
 )
 
 func FromRequest(req *httpReq) *Response {
- 	const ECHO_PRE = "/echo/"
+	const ECHO_PRE = "/echo/"
+	const HEADER_PRE = "/"
+
 	switch {
 	case req == nil:
 		return &Response{Status: 404}
@@ -33,6 +35,16 @@ func FromRequest(req *httpReq) *Response {
 		res := &Response{Status: 200}
 		res.addBody("text/plain", body)
 		return res
+	case strings.HasPrefix(req.path, HEADER_PRE):
+		header := strings.ToLower(req.path[len(HEADER_PRE):])
+		for key, value := range req.headers {
+			if strings.ToLower(key) != header {
+				continue
+			}
+			res := &Response{Status: 200}
+			res.addBody("text/plain", value)
+			return res
+		}
 	}
 
 	return &Response{Status: 404}
@@ -44,14 +56,14 @@ func (res *Response) addBody(contentType string, body string) {
 	}
 	res.Headers["Content-Type"] = contentType
 	res.Headers["Content-Length"] = strconv.Itoa(len(body))
- 
+
 	res.Body = body
 }
 
 func (res *Response) String() (string, error) {
 	res.writeStatus()
 	res.writeHeaders()
- 
+
 	res.writeBody()
 	return res.str.String(), nil
 }
@@ -75,7 +87,7 @@ func (res *Response) writeStatus() {
 }
 
 func (res *Response) writeHeaders() {
- 
+
 	for key, val := range res.Headers {
 		res.str.WriteString(key)
 		res.str.WriteString(": ")
@@ -87,5 +99,5 @@ func (res *Response) writeHeaders() {
 
 func (res *Response) writeBody() {
 	res.str.WriteString(res.Body)
- 	// TODO: Might have to add \r\n here?
+	// TODO: Might have to add \r\n here?
 }
