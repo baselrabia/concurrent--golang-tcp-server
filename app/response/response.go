@@ -38,6 +38,36 @@ var fileServerDir = func() string {
 }()
 
 func FromRequest(req *request.Request) *Response {
+	if req == nil {
+		return &Response{Status: 404}
+	}
+	switch req.Method {
+	case "GET":
+		return fromGetRequest(req)
+	case "POST":
+		return fromPostRequest(req)
+	}
+	return &Response{Status: 404}
+}
+
+func fromPostRequest(req *request.Request) *Response {
+	const FILE_PRE = "/files/"
+	switch {
+	// Post file route
+	case strings.HasPrefix(req.Path, FILE_PRE):
+		filename := req.Path[len(FILE_PRE):]
+		path := filepath.Join(fileServerDir, filename)
+		err := os.WriteFile(path, req.Body, 0)
+		if err != nil {
+			fmt.Printf("Error attempting to write file %q: %s\n", path, err.Error())
+			return &Response{Status: 404}
+		}
+		return &Response{Status: 201}
+	}
+	return &Response{Status: 404}
+}
+
+func fromGetRequest(req *request.Request) *Response {
 	// In descending priority.
 	const ECHO_PRE = "/echo/"
 	const FILE_PRE = "/files/"

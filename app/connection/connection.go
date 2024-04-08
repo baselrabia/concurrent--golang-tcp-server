@@ -35,7 +35,9 @@ func HandleConn(conn net.Conn) {
 	fmt.Printf("Bytes read: %d\n", bytesRead)
 	fmt.Printf("Request:\n---Request Start---\n%s\n---Request End---\n", reqBuf)
 
+	fmt.Println("parsing request...")
 	req, _ := request.ParseRequest(reqBuf)
+	fmt.Println("creating response...")
 	res := response.FromRequest(req)
 
 	str, err := res.String()
