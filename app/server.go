@@ -29,6 +29,7 @@ func main() {
 	
 	connChan := make(chan net.Conn)
 
+	//	can handle concurrent requests
 	go connection.HandleConnections(connChan)
 
 	for {
